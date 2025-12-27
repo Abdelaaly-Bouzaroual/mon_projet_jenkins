@@ -17,11 +17,13 @@ pipeline {
 
         stage('Test') {
             steps {
-                // On utilise ''' pour écrire un bloc de script sur plusieurs lignes
                 sh '''
-                    #!/bin/bash
+                    # On lance le programme
                     OUTPUT=$(java Bonjour)
-                    if [[ "$OUTPUT" == *"DevOps"* ]]; then
+                    
+                    # On utilise grep pour chercher le mot "DevOps".
+                    # Si grep trouve le mot, il renvoie "vrai" (code 0).
+                    if echo "$OUTPUT" | grep "DevOps"; then
                         echo "✅ Test réussi !"
                     else
                         echo "❌ Échec du test : $OUTPUT"
@@ -30,7 +32,6 @@ pipeline {
                 '''
             }
         }
-
         stage('Packaging') {
             steps {
                 sh 'jar cfe app.jar Bonjour Bonjour.class'
