@@ -34,12 +34,27 @@ pipeline {
         }
         // ----------------------
 
-        stage('Construction Image Docker') {
+     stage('Construction & Push Nexus') {
             steps {
-                sh 'docker build -t mon-app-jenkins-v${BUILD_NUMBER} .'
+                script {
+                    echo '📦 Construction et Envoi vers Nexus...'
+                    
+                    // On récupère les identifiants 'nexus-auth' qu'on vient de créer
+                    withCredentials([usernamePassword(credentialsId: 'nexus-auth', usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
+                        
+                        // 1. Login (On se connecte à l'entrepôt)
+                        sh "docker login -u ${NEXUS_USER} -p ${NEXUS_PASS} localhost:8083"
+                        
+                        // 2. Build (On construit en précisant l'adresse de destination)
+                        // Note le tag : localhost:8083/nom-image
+                        sh "docker build -t localhost:8083/mon-app-jenkins-v${BUILD_NUMBER} ."
+                        
+                        // 3. Push (On envoie le paquet !)
+                        sh "docker push localhost:8083/mon-app-jenkins-v${BUILD_NUMBER}"
+                    }
+                }
             }
         }
-
         stage('Déploiement Continu') {
             steps {
                 script {
