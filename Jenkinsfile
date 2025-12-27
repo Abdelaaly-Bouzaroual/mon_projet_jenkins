@@ -10,7 +10,6 @@ pipeline {
 
         stage('Build & Test Java') {
             steps {
-                // On garde une compilation locale rapide pour vérifier les erreurs de syntaxe
                 echo 'Vérification du code Java...'
                 sh 'javac Bonjour.java'
                 sh '''
@@ -26,16 +25,26 @@ pipeline {
         stage('Construction Image Docker') {
             steps {
                 echo '🐳 Construction de l\'image Docker...'
-                // Jenkins lance la commande docker build
                 sh 'docker build -t mon-app-jenkins-v${BUILD_NUMBER} .'
             }
         }
-        
-        stage('Nettoyage Docker') {
+
+        stage('Déploiement Continu') {
             steps {
-                 // Optionnel : On supprime l'image après pour ne pas remplir le disque
-                 // sh 'docker rmi mon-app-jenkins-v${BUILD_NUMBER}'
-                 echo 'Image prête !'
+                script {
+                    echo '🚀 Mise à jour de l\'application...'
+                    
+                    // 1. On essaie d'arrêter l'ancien conteneur (le "|| true" évite l'erreur si c'est le tout premier lancement)
+                    sh 'docker stop mon-app-prod || true'
+                    
+                    // 2. On supprime l'ancien conteneur
+                    sh 'docker rm mon-app-prod || true'
+                    
+                    // 3. On lance le nouveau !
+                    // --name : On lui donne un nom fixe "mon-app-prod" pour pouvoir le retrouver au prochain build
+                    // -p 8090:80 : On ouvre le port 8090
+                    sh 'docker run -d -p 8090:80 --name mon-app-prod mon-app-jenkins-v${BUILD_NUMBER}'
+                }
             }
         }
     }
