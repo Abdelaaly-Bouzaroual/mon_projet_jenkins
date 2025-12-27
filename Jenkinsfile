@@ -8,40 +8,34 @@ pipeline {
             }
         }
 
-        stage('Build') {
+        stage('Build & Test Java') {
             steps {
-                echo 'Compilation du code...'
+                // On garde une compilation locale rapide pour vérifier les erreurs de syntaxe
+                echo 'Vérification du code Java...'
                 sh 'javac Bonjour.java'
-            }
-        }
-
-        stage('Test') {
-            steps {
                 sh '''
-                    # On lance le programme
-                    OUTPUT=$(java Bonjour)
-                    
-                    # On utilise grep pour chercher le mot "DevOps".
-                    # Si grep trouve le mot, il renvoie "vrai" (code 0).
-                    if echo "$OUTPUT" | grep "DevOps"; then
-                        echo "✅ Test réussi !"
+                    if java Bonjour | grep "DevOps"; then
+                        echo "✅ Code valide !"
                     else
-                        echo "❌ Échec du test : $OUTPUT"
                         exit 1
                     fi
                 '''
             }
         }
-        stage('Packaging') {
+
+        stage('Construction Image Docker') {
             steps {
-                sh 'jar cfe app.jar Bonjour Bonjour.class'
+                echo '🐳 Construction de l\'image Docker...'
+                // Jenkins lance la commande docker build
+                sh 'docker build -t mon-app-jenkins-v${BUILD_NUMBER} .'
             }
         }
-
-        stage('Déploiement') {
+        
+        stage('Nettoyage Docker') {
             steps {
-                // On utilise la variable BUILD_NUMBER fournie par Jenkins
-                sh "cp app.jar /mnt/c/Devops/Production_Server/app_v${BUILD_NUMBER}.jar"
+                 // Optionnel : On supprime l'image après pour ne pas remplir le disque
+                 // sh 'docker rmi mon-app-jenkins-v${BUILD_NUMBER}'
+                 echo 'Image prête !'
             }
         }
     }
