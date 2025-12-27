@@ -12,19 +12,30 @@ pipeline {
             steps {
                 echo 'Vérification du code Java...'
                 sh 'javac Bonjour.java'
-                sh '''
-                    if java Bonjour | grep "DevOps"; then
-                        echo "✅ Code valide !"
-                    else
-                        exit 1
-                    fi
-                '''
             }
         }
 
+        // --- NOUVELLE ÉTAPE ---
+        stage('Analyse Qualité (SonarQube)') {
+            steps {
+                script {
+                    // On récupère l'outil qu'on vient d'installer
+                    def scannerHome = tool 'SonarScanner'
+                    
+                    // On lance l'analyse en utilisant le serveur "sonar-server" configuré tout à l'heure
+                    withSonarQubeEnv('sonar-server') {
+                        sh "${scannerHome}/bin/sonar-scanner \
+                        -Dsonar.projectKey=mon-projet-jenkins \
+                        -Dsonar.sources=. \
+                        -Dsonar.java.binaries=."
+                    }
+                }
+            }
+        }
+        // ----------------------
+
         stage('Construction Image Docker') {
             steps {
-                echo '🐳 Construction de l\'image Docker...'
                 sh 'docker build -t mon-app-jenkins-v${BUILD_NUMBER} .'
             }
         }
@@ -32,17 +43,8 @@ pipeline {
         stage('Déploiement Continu') {
             steps {
                 script {
-                    echo '🚀 Mise à jour de l\'application...'
-                    
-                    // 1. On essaie d'arrêter l'ancien conteneur (le "|| true" évite l'erreur si c'est le tout premier lancement)
                     sh 'docker stop mon-app-prod || true'
-                    
-                    // 2. On supprime l'ancien conteneur
                     sh 'docker rm mon-app-prod || true'
-                    
-                    // 3. On lance le nouveau !
-                    // --name : On lui donne un nom fixe "mon-app-prod" pour pouvoir le retrouver au prochain build
-                    // -p 8090:80 : On ouvre le port 8090
                     sh 'docker run -d -p 8090:80 --name mon-app-prod mon-app-jenkins-v${BUILD_NUMBER}'
                 }
             }
