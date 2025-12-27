@@ -55,12 +55,16 @@ pipeline {
                 }
             }
         }
-        stage('Déploiement Continu') {
+
+ stage('Déploiement Continu') {
             steps {
                 script {
+                    echo '🚀 Déploiement de l\'image depuis le registre...'
                     sh 'docker stop mon-app-prod || true'
                     sh 'docker rm mon-app-prod || true'
-                    sh 'docker run -d -p 8090:80 --name mon-app-prod mon-app-jenkins-v${BUILD_NUMBER}'
+                    
+                    // CORRECTION ICI : On utilise le nom complet (localhost:8083/...)
+                    sh 'docker run -d -p 8090:80 --name mon-app-prod localhost:8083/mon-app-jenkins-v${BUILD_NUMBER}'
                 }
             }
         }
