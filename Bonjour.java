@@ -1,1 +1,1 @@
-public class Bonjour { public static void main(String[] args) { System.out.println("Bonjour Jenkins !"); } }
+public class Bonjour { public static void main(String[] args) { System.out.println("Bonjour Jenkins this is my first modification !"); } }
